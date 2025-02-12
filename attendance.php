@@ -15,10 +15,37 @@ require_once plugin_dir_path(__FILE__) . 'includes/shortcode.php';
 require_once plugin_dir_path(__FILE__) . 'includes/ajax.php';
 require_once plugin_dir_path(__FILE__) . 'includes/status.php';
 
-// Daftarkan file JS
+/**
+ * Enqueue scripts dan styles
+ */
 function absensi_enqueue_scripts()
 {
-  wp_enqueue_script('alpinejs', 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js', [], '3.14.8', true);
-  wp_enqueue_script('absensi-js', plugin_dir_url(__FILE__) . 'assets/js/absensi.js', [], '1.0', true);
+  // Load Alpine.js dengan defer
+  wp_enqueue_script(
+    'alpinejs',
+    'https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js',
+    [],
+    '3.14.8',
+    ['strategy' => 'defer'] // Gunakan defer untuk optimasi
+  );
+
+  // Load custom script dengan defer
+  // wp_enqueue_script(
+  //   'absensi-js',
+  //   plugins_url('assets/js/absensi.js', __FILE__),
+  //   ['alpinejs'],
+  //   filemtime(plugin_dir_path(__FILE__) . 'assets/js/absensi.js'), // Cache busting
+  //   ['strategy' => 'defer']
+  // );
+
+  // Localize script untuk AJAX
+  wp_localize_script(
+    'absensi-js',
+    'absensiAjax',
+    [
+      'ajaxurl' => admin_url('admin-ajax.php'),
+      'nonce'   => wp_create_nonce('absensi_nonce')
+    ]
+  );
 }
 add_action('wp_enqueue_scripts', 'absensi_enqueue_scripts');
