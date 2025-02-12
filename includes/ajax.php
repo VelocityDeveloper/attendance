@@ -95,3 +95,80 @@ function handle_get_absensi_status()
     'sudahAbsen' => ['masuk' => in_array('masuk', $absensi_today), 'pulang' => in_array('pulang', $absensi_today)],
   ]);
 }
+
+
+function get_users_ajax()
+{
+  if (!is_user_logged_in()) {
+    wp_send_json_error(['message' => 'Anda harus login.']);
+  }
+
+  global $wpdb;
+  $users = $wpdb->get_results("SELECT ID as id, display_name as name FROM $wpdb->users", ARRAY_A);
+
+  wp_send_json_success(['users' => $users]);
+}
+add_action('wp_ajax_get_users', 'get_users_ajax');
+
+function get_absensi_list_ajax()
+{
+  if (!is_user_logged_in() || !isset($_GET['user_id'])) {
+    wp_send_json_error(['message' => 'Data tidak valid.']);
+  }
+
+  global $wpdb;
+  $user_id = intval($_GET['user_id']);
+  $table_name = $wpdb->prefix . 'absensi';
+
+  // ambil data dari database dan tampilkan data 30 hari terakhir
+  $query = "SELECT * FROM $table_name WHERE user_id = $user_id ORDER BY time DESC LIMIT 30";
+  $absensi = $wpdb->get_results($query, ARRAY_A);
+
+  if (empty($absensi)) {
+    error_log("Tidak ada data absensi untuk user_id: " . $user_id);
+  }
+
+  wp_send_json_success(['user_id' => $user_id, 'query' => $query, 'absensi' => $absensi, 'nama_table' => $table_name]);
+}
+add_action('wp_ajax_get_absensi_list', 'get_absensi_list_ajax');
+
+
+add_action('wp_ajax_get_shifts', function () {
+  $shifts = get_option('work_shifts', []);
+  wp_send_json_success($shifts);
+});
+
+add_action('wp_ajax_save_shift', function () {
+  $shifts = get_option('work_shifts', []);
+  $new_shift = json_decode(stripslashes($_POST['shift']), true);
+  $shifts[] = $new_shift;
+  update_option('work_shifts', $shifts);
+  wp_send_json_success();
+});
+
+add_action('wp_ajax_update_shift', function () {
+  $shifts = get_option('work_shifts', []);
+  $index = intval($_POST['index']);
+  $updated_shift = json_decode(stripslashes($_POST['shift']), true);
+
+  if (isset($shifts[$index])) {
+    $shifts[$index] = $updated_shift;
+    update_option('work_shifts', $shifts);
+    wp_send_json_success();
+  } else {
+    wp_send_json_error();
+  }
+});
+
+add_action('wp_ajax_delete_shift', function () {
+  $shifts = get_option('work_shifts', []);
+  $index = intval($_POST['index']);
+
+  if (isset($shifts[$index])) {
+    array_splice($shifts, $index, 1);
+    update_option('work_shifts', $shifts);
+    wp_send_json_success();
+  } else {
+    wp_send_json_error();
+  }
+});

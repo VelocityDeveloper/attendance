@@ -40,7 +40,7 @@ function absensi_enqueue_scripts()
 
   // Localize script untuk AJAX
   wp_localize_script(
-    'absensi-js',
+    'alpinejs',
     'absensiAjax',
     [
       'ajaxurl' => admin_url('admin-ajax.php'),
