@@ -120,17 +120,54 @@ function get_absensi_list_ajax()
   $user_id = intval($_GET['user_id']);
   $table_name = $wpdb->prefix . 'absensi';
 
-  // ambil data dari database dan tampilkan data 30 hari terakhir
+  // Ambil data absensi 30 hari terakhir
   $query = "SELECT * FROM $table_name WHERE user_id = $user_id ORDER BY time DESC LIMIT 30";
   $absensi = $wpdb->get_results($query, ARRAY_A);
 
-  if (empty($absensi)) {
-    error_log("Tidak ada data absensi untuk user_id: " . $user_id);
+  // Ambil shift yang ditugaskan ke user ini
+  $assignments = get_option('shift_assignments', []);
+  $shifts = get_option('work_shifts', []);
+  $user_shift = null;
+
+  foreach ($assignments as $assignment) {
+    if ($assignment['user_id'] == $user_id) {
+      $user_shift = $shifts[$assignment['shift']] ?? null;
+      break;
+    }
   }
 
-  wp_send_json_success(['user_id' => $user_id, 'query' => $query, 'absensi' => $absensi, 'nama_table' => $table_name]);
+  // Proses keterlambatan dan pulang sebelum waktunya
+  foreach ($absensi as &$absen) {
+    if ($user_shift) {
+      $absen_time = strtotime($absen['time']);
+      $shift_start = strtotime(date('Y-m-d', $absen_time) . ' ' . $user_shift['start']);
+      $shift_end = strtotime(date('Y-m-d', $absen_time) . ' ' . $user_shift['end']);
+
+      if ($absen['type'] == 'masuk') {
+        $absen['status'] = ($absen_time > $shift_start) ? 'Terlambat' : 'Masuk Tepat Waktu';
+      } elseif ($absen['type'] == 'pulang') {
+        $absen['status'] = ($absen_time < $shift_end) ? 'Pulang Sebelum Waktunya' : 'Pulang Tepat Waktu';
+      } else {
+        $absen['status'] = ($absen_time < $shift_end) ? 'Pulang Sebelum Waktunya' : 'Pulang Tepat Waktu';
+      }
+      // jika masuk dan setelah jam masuk maka selisih waktu minus dam format - hh:mm
+      if ($absen['type'] == 'masuk' && $absen_time > $shift_start) {
+        $selisih_waktu = ($absen_time - $shift_start) / 60;
+        $absen['selisih_waktu'] = " - " . date('H:i', $selisih_waktu);
+      } else if ($absen['type'] == 'pulang' && $absen_time < $shift_end) {
+        $selisih_waktu = ($shift_end - $absen_time) / 60;
+        $absen['selisih_waktu'] = " - " . date('H:i', $selisih_waktu);
+      }
+    } else {
+      $absen['status'] = 'Shift Tidak Ditemukan';
+    }
+  }
+
+  wp_send_json_success(['user_id' => $user_id, 'absensi' => $absensi]);
 }
 add_action('wp_ajax_get_absensi_list', 'get_absensi_list_ajax');
+
+
 
 
 add_action('wp_ajax_get_shifts', function () {
@@ -167,6 +204,44 @@ add_action('wp_ajax_delete_shift', function () {
   if (isset($shifts[$index])) {
     array_splice($shifts, $index, 1);
     update_option('work_shifts', $shifts);
+    wp_send_json_success();
+  } else {
+    wp_send_json_error();
+  }
+});
+
+add_action('wp_ajax_get_shift_assignments', function () {
+  $assignments = get_option('shift_assignments', []);
+
+  foreach ($assignments as &$assignment) {
+    $user = get_user_by('ID', $assignment['user_id']);
+    $shifts = get_option('work_shifts', []);
+    $shift = $shifts[$assignment['shift']] ?? null;
+
+    $assignment['user_name'] = $user ? $user->display_name : 'Unknown';
+    $assignment['shift_name'] = $shift['name'] ?? 'Unknown';
+    $assignment['shift_start'] = $shift['start'] ?? '00:00';
+    $assignment['shift_end'] = $shift['end'] ?? '00:00';
+  }
+
+  wp_send_json_success($assignments);
+});
+
+add_action('wp_ajax_assign_shift', function () {
+  $assignments = get_option('shift_assignments', []);
+  $new_assignment = json_decode(stripslashes($_POST['assignment']), true);
+  $assignments[] = $new_assignment;
+  update_option('shift_assignments', $assignments);
+  wp_send_json_success();
+});
+
+add_action('wp_ajax_remove_shift_assignment', function () {
+  $assignments = get_option('shift_assignments', []);
+  $index = intval($_POST['index']);
+
+  if (isset($assignments[$index])) {
+    array_splice($assignments, $index, 1);
+    update_option('shift_assignments', $assignments);
     wp_send_json_success();
   } else {
     wp_send_json_error();

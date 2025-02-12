@@ -172,11 +172,13 @@ function daftar_absensi_shortcode()
 
       <!-- Tabel Absensi -->
       <div class="table-responsive">
-        <table class="table table-bordered">
+        <table class="table table-striped">
           <thead class="table-dark text-center">
             <tr>
               <th>Tanggal</th>
-              <th>Status</th>
+              <th>Jam</th>
+              <th>Tipe</th>
+              <th>Keterangan</th>
             </tr>
           </thead>
           <tbody>
@@ -184,8 +186,13 @@ function daftar_absensi_shortcode()
               <tr>
                 <td x-text="formatTanggal(absen.time)"></td>
                 <td>
-                  <span class="badge" :class="absen.type === 'masuk' ? 'bg-success' : 'bg-danger'" x-text="absen.masuk ? 'Masuk' : 'Pulang'"></span>
+                  <span x-text="formatJam(absen.time)"></span>
+                  <span x-text="absen.selisih_waktu"></span>
                 </td>
+                <td>
+                  <span class="badge bg-success" x-text="absen.type === 'masuk' ? 'Masuk' : 'Pulang'"></span>
+                </td>
+                <td x-text="absen.status"></td>
               </tr>
             </template>
           </tbody>
@@ -245,6 +252,14 @@ function daftar_absensi_shortcode()
             year: "numeric"
           };
           return new Date(tanggal).toLocaleDateString("id-ID", options);
+        },
+
+        formatJam(jam) {
+          const options = {
+            hour: "numeric",
+            minute: "numeric"
+          };
+          return new Date(jam).toLocaleTimeString("id-ID", options);
         },
 
         init() {
@@ -421,3 +436,145 @@ function shift_settings_shortcode()
   return ob_get_clean();
 }
 add_shortcode('shift_settings', 'shift_settings_shortcode');
+
+function shift_assignment_shortcode()
+{
+  if (!current_user_can('manage_options')) {
+    return '<p>Anda tidak memiliki izin untuk mengakses halaman ini.</p>';
+  }
+
+  global $wpdb;
+  $users = get_users(['role__in' => ['subscriber', 'editor', 'author', 'contributor', 'administrator']]);
+  $shifts = get_option('work_shifts', []);
+
+  ob_start();
+?>
+  <div class="container mt-4" x-data="shiftAssignment()">
+    <h3 class="mb-3">Pengaturan Shift Karyawan</h3>
+
+    <!-- Form Penugasan Shift -->
+    <div class="card p-3 mb-4">
+      <h5>Atur Shift Karyawan</h5>
+      <div class="row">
+        <div class="col-md-4">
+          <select class="form-select" x-model="newAssignment.user_id">
+            <option value="">Pilih Karyawan</option>
+            <?php foreach ($users as $user) : ?>
+              <option value="<?= $user->ID ?>"><?= $user->display_name ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <select class="form-select" x-model="newAssignment.shift">
+            <option value="">Pilih Shift</option>
+            <?php foreach ($shifts as $index => $shift) : ?>
+              <option value="<?= $index ?>"><?= esc_html($shift['name']) ?> (<?= esc_html($shift['start']) ?> - <?= esc_html($shift['end']) ?>)</option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" @click="assignShift()">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- List Shift Karyawan -->
+    <div class="card p-3">
+      <h5>Daftar Shift Karyawan</h5>
+      <table class="table table-bordered mt-2">
+        <thead>
+          <tr>
+            <th>Karyawan</th>
+            <th>Shift</th>
+            <th>Jam Kerja</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="(assignment, index) in assignments" :key="index">
+            <tr>
+              <td x-text="assignment.user_name"></td>
+              <td x-text="assignment.shift_name"></td>
+              <td x-text="assignment.shift_start + ' - ' + assignment.shift_end"></td>
+              <td>
+                <button class="btn btn-danger btn-sm" @click="removeAssignment(index)">Hapus</button>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("alpine:init", () => {
+      Alpine.data("shiftAssignment", () => ({
+        assignments: [],
+        newAssignment: {
+          user_id: '',
+          shift: ''
+        },
+
+        async fetchAssignments() {
+          const response = await fetch("<?= admin_url('admin-ajax.php?action=get_shift_assignments') ?>");
+          const result = await response.json();
+          this.assignments = result.data || [];
+        },
+
+        async assignShift() {
+          if (!this.newAssignment.user_id || !this.newAssignment.shift) {
+            alert("Mohon pilih karyawan dan shift!");
+            return;
+          }
+
+          const formData = new FormData();
+          formData.append("action", "assign_shift");
+          formData.append("assignment", JSON.stringify(this.newAssignment));
+
+          const response = await fetch("<?= admin_url('admin-ajax.php') ?>", {
+            method: "POST",
+            body: formData
+          });
+
+          const result = await response.json();
+          if (result.success) {
+            this.fetchAssignments();
+            this.newAssignment = {
+              user_id: '',
+              shift: ''
+            };
+          } else {
+            alert("Gagal menyimpan shift.");
+          }
+        },
+
+        async removeAssignment(index) {
+          if (!confirm("Yakin ingin menghapus shift ini?")) return;
+
+          const formData = new FormData();
+          formData.append("action", "remove_shift_assignment");
+          formData.append("index", index);
+
+          const response = await fetch("<?= admin_url('admin-ajax.php') ?>", {
+            method: "POST",
+            body: formData
+          });
+
+          const result = await response.json();
+          if (result.success) {
+            this.fetchAssignments();
+          } else {
+            alert("Gagal menghapus shift.");
+          }
+        },
+
+        init() {
+          this.fetchAssignments();
+        }
+      }));
+    });
+  </script>
+<?php
+  return ob_get_clean();
+}
+add_shortcode('shift_assignment', 'shift_assignment_shortcode');
