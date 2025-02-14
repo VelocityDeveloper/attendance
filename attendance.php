@@ -11,9 +11,13 @@ if (!defined('ABSPATH')) exit; // Mencegah akses langsung
 
 // Memuat semua file yang diperlukan
 require_once plugin_dir_path(__FILE__) . 'includes/db.php';
-require_once plugin_dir_path(__FILE__) . 'includes/shortcode.php';
 require_once plugin_dir_path(__FILE__) . 'includes/ajax.php';
 require_once plugin_dir_path(__FILE__) . 'includes/status.php';
+// require_once plugin_dir_path(__FILE__) . 'includes/shortcode.php';
+require_once plugin_dir_path(__FILE__) . 'includes/shortcode/absensi.php';
+require_once plugin_dir_path(__FILE__) . 'includes/shortcode/daftar-absensi.php';
+require_once plugin_dir_path(__FILE__) . 'includes/shortcode/shift-setting.php';
+require_once plugin_dir_path(__FILE__) . 'includes/shortcode/shift-assignment.php';
 
 /**
  * Enqueue scripts dan styles
