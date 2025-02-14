@@ -26,7 +26,7 @@ function daftar_absensi_shortcode()
 
       <!-- Loading Spinner -->
       <div class="text-center my-3" x-show="loading">
-        <div class="spinner-border text-primary" role="status">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
           <span class="visually-hidden">Mengambil data absensi...</span>
         </div>
       </div>
@@ -39,6 +39,7 @@ function daftar_absensi_shortcode()
               <th>Tanggal</th>
               <th>Jam</th>
               <th>Keterangan</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -52,7 +53,20 @@ function daftar_absensi_shortcode()
                   <br>
                 </td>
                 <td>
-                  <span x-text="absen.status"></span> <span class="text-danger" x-text="absen.selisih_waktu"></span>
+                  <span x-text="absen.status"></span>
+                  <span class="text-danger" x-text="absen.selisih_waktu"></span>
+                </td>
+                <td>
+                  <button @click="deleteAbsensi(absen.id)" class="btn btn-danger btn-sm">
+                    <template x-if="singleLoading[absen.id]">
+                      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                    </template>
+                    <template x-if="!singleLoading[absen.id]">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+                        <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47M8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5" />
+                      </svg>
+                    </template>
+                  </button>
                 </td>
               </tr>
             </template>
@@ -72,6 +86,7 @@ function daftar_absensi_shortcode()
         selectedUser: "",
         absensi: [],
         loading: true,
+        singleLoading: {}, // Use an object to track loading state
 
         async fetchUsers() {
           try {
@@ -103,6 +118,36 @@ function daftar_absensi_shortcode()
             console.error("Gagal mengambil data absensi:", error);
           } finally {
             this.loading = false;
+          }
+        },
+
+        async deleteAbsensi(absenId) {
+          this.singleLoading[absenId] = true; // Set loading state for specific button
+          if (confirm("Apakah Anda yakin ingin menghapus absensi ini?")) {
+            try {
+              const response = await fetch(`${absensiAjax.ajaxurl}?action=delete_absensi`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  id: absenId
+                }),
+              });
+              const result = await response.json();
+
+              if (result.success) {
+                this.fetchAbsensi(); // Refresh the list after deletion
+              } else {
+                alert(result.message || "Gagal menghapus absensi.");
+              }
+            } catch (error) {
+              console.error("Gagal menghapus absensi:", error);
+            } finally {
+              this.singleLoading[absenId] = false; // Reset loading state
+            }
+          } else {
+            this.singleLoading[absenId] = false; // Reset loading state if canceled
           }
         },
 
@@ -199,3 +244,35 @@ function get_absensi_list_ajax()
   wp_send_json_success(['user_id' => $user_id, 'absensi' => $absensi]);
 }
 add_action('wp_ajax_get_absensi_list', 'get_absensi_list_ajax');
+
+function delete_absensi_ajax()
+{
+  // Read the raw input from the request body
+  $input = json_decode(file_get_contents('php://input'), true);
+
+  // Check if the 'id' is set in the decoded input
+  if (!isset($input['id'])) {
+    wp_send_json_error([
+      'message' => 'Data tidak valid.',
+      'data' => $input
+    ]);
+  }
+
+  if (!is_user_logged_in()) {
+    wp_send_json_error(['message' => 'Anda harus login.']);
+  }
+
+  global $wpdb;
+  $table_name = $wpdb->prefix . 'absensi';
+  $absen_id = intval($input['id']); // Use the id from the decoded input
+
+  // Menghapus data absensi
+  $deleted = $wpdb->delete($table_name, ['id' => $absen_id]);
+
+  if ($deleted) {
+    wp_send_json_success(['message' => 'Absensi berhasil dihapus.']);
+  } else {
+    wp_send_json_error(['message' => 'Gagal menghapus absensi.']);
+  }
+}
+add_action('wp_ajax_delete_absensi', 'delete_absensi_ajax');
