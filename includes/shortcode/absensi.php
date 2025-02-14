@@ -17,7 +17,7 @@ function absensi_shortcode()
 
       <!-- Loading Spinner -->
       <div class="text-center my-3" x-show="loading">
-        <div class="spinner-border text-primary" role="status">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
           <span class="visually-hidden">Memeriksa status absensi...</span>
         </div>
       </div>
@@ -219,11 +219,11 @@ function handle_get_absensi_status()
   );
 
   if (in_array('masuk', $absensi_today) && in_array('pulang', $absensi_today)) {
-    $status = "Anda sudah absen masuk & pulang hari ini.";
+    $status = "Sampai jumpa lagi!";
   } elseif (in_array('masuk', $absensi_today)) {
-    $status = "Anda sudah absen masuk, silakan absen pulang.";
+    $status = "Tetap semangat & Fokus!";
   } else {
-    $status = "Belum ada absensi hari ini.";
+    $status = "Silakan absen masuk.";
   }
 
   wp_send_json_success([
