@@ -24,6 +24,21 @@ function izin_form_shortcode()
         </div>
 
         <div class="mb-3">
+          <label for="startDate" class="form-label">Tanggal Mulai Izin:</label>
+          <input type="date" id="startDate" class="form-control" x-model="startDate" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="endDate" class="form-label">Tanggal Akhir Izin:</label>
+          <input type="date" id="endDate" class="form-control" x-model="endDate" @change="calculateDays()" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="jumlahHari" class="form-label">Jumlah Hari Kerja:</label>
+          <input type="number" id="jumlahHari" class="form-control" x-model="jumlahHari" min="1" readonly>
+        </div>
+
+        <div class="mb-3">
           <label for="deskripsi" class="form-label">Deskripsi:</label>
           <textarea id="deskripsi" class="form-control" x-model="deskripsi" rows="3" required></textarea>
         </div>
@@ -53,6 +68,9 @@ function izin_form_shortcode()
     document.addEventListener("alpine:init", () => {
       Alpine.data("izinFormHandler", () => ({
         jenisIzin: "",
+        startDate: "",
+        endDate: "",
+        jumlahHari: 1,
         deskripsi: "",
         lampiran: null,
         loading: false,
@@ -63,6 +81,16 @@ function izin_form_shortcode()
           this.lampiran = event.target.files[0];
         },
 
+        calculateDays() {
+          if (this.startDate && this.endDate) {
+            const start = new Date(this.startDate);
+            const end = new Date(this.endDate);
+            const timeDiff = end - start;
+            const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // Include start day
+            this.jumlahHari = dayDiff > 0 ? dayDiff : 0;
+          }
+        },
+
         async submitForm() {
           this.loading = true;
           this.successMessage = "";
@@ -71,6 +99,9 @@ function izin_form_shortcode()
           const formData = new FormData();
           formData.append("action", "submit_izin");
           formData.append("jenis_izin", this.jenisIzin);
+          formData.append("start_date", this.startDate);
+          formData.append("end_date", this.endDate);
+          formData.append("jumlah_hari", this.jumlahHari);
           formData.append("deskripsi", this.deskripsi);
           formData.append("lampiran", this.lampiran);
 
@@ -98,6 +129,9 @@ function izin_form_shortcode()
 
         resetForm() {
           this.jenisIzin = "";
+          this.startDate = "";
+          this.endDate = "";
+          this.jumlahHari = 1;
           this.deskripsi = "";
           this.lampiran = null;
         },

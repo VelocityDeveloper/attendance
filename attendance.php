@@ -34,7 +34,6 @@ function absensi_enqueue_scripts()
     ['strategy' => 'defer'] // Gunakan defer untuk optimasi
   );
 
-  // Load custom script dengan defer
   // wp_enqueue_script(
   //   'absensi-js',
   //   plugins_url('assets/js/absensi.js', __FILE__),
@@ -54,3 +53,11 @@ function absensi_enqueue_scripts()
   );
 }
 add_action('wp_enqueue_scripts', 'absensi_enqueue_scripts');
+
+// Enqueue admin scripts
+add_action('admin_enqueue_scripts', 'enqueue_custom_admin_script');
+function enqueue_custom_admin_script()
+{
+  wp_enqueue_script('custom-admin-script', plugin_dir_url(__FILE__) . '/assets/js/absensi.js', array('jquery'), null, true);
+  wp_localize_script('custom-admin-script', 'absensiAjax', array('ajaxurl' => admin_url('admin-ajax.php')));
+}
