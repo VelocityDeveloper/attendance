@@ -34,7 +34,7 @@ function list_izin_shortcode()
             <td>
               <span class="badge 
                              <?php echo $izin['status'] === 'approved' ? 'bg-success' : ($izin['status'] === 'rejected' ? 'bg-danger' : 'bg-warning'); ?>">
-                <?php echo esc_html($izin['status']) ?? 'Belum Ditentukan'; ?>
+                <?php echo $izin['status'] != '' ? esc_html($izin['status']) : 'Belum Ditentukan'; ?>
               </span>
             </td>
           </tr>
