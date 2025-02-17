@@ -14,7 +14,12 @@ require_once plugin_dir_path(__FILE__) . 'includes/db.php';
 require_once plugin_dir_path(__FILE__) . 'includes/ajax.php';
 require_once plugin_dir_path(__FILE__) . 'includes/status.php';
 require_once plugin_dir_path(__FILE__) . 'includes/admin-izin.php';
+require_once plugin_dir_path(__FILE__) . 'includes/jabatan.php';
+
+require_once plugin_dir_path(__FILE__) . 'includes/shortcode/login.php';
+require_once plugin_dir_path(__FILE__) . 'includes/shortcode/register.php';
 require_once plugin_dir_path(__FILE__) . 'includes/shortcode/izin.php';
+require_once plugin_dir_path(__FILE__) . 'includes/shortcode/kordinat.php';
 require_once plugin_dir_path(__FILE__) . 'includes/shortcode/absensi.php';
 require_once plugin_dir_path(__FILE__) . 'includes/shortcode/daftar-absensi.php';
 require_once plugin_dir_path(__FILE__) . 'includes/shortcode/shift-setting.php';

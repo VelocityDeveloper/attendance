@@ -4,14 +4,14 @@ if (!defined('ABSPATH')) exit;
 function shift_settings_shortcode()
 {
   if (!current_user_can('manage_options')) {
-    return '<p>Anda tidak memiliki izin untuk mengakses halaman ini.</p>';
+    return '';
   }
 
   ob_start();
 ?>
   <div class="container mt-4" x-data="shiftManager()">
     <!-- List Shift -->
-    <div class="card p-3">
+    <div>
       <h5>Tambah Shift</h5>
       <div class="row">
         <div class="col-4 px-1">

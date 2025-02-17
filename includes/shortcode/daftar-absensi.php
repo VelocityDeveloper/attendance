@@ -10,7 +10,7 @@ function daftar_absensi_shortcode()
   ob_start();
 ?>
   <div class="container mt-4">
-    <div x-data="absensiListHandler()" class="card shadow-sm p-4">
+    <div x-data="absensiListHandler()">
       <h4 class="text-center mb-3">Riwayat Absensi 30 Hari Terakhir</h4>
 
       <!-- Pilihan Karyawan -->

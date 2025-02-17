@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) exit;
 function shift_assignment_shortcode()
 {
   if (!current_user_can('manage_options')) {
-    return '<p>Anda tidak memiliki izin untuk mengakses halaman ini.</p>';
+    return '';
   }
 
   global $wpdb;
@@ -16,7 +16,7 @@ function shift_assignment_shortcode()
 ?>
   <div class="container mt-4" x-data="shiftAssignment()">
     <!-- List Shift Karyawan -->
-    <div class="card p-3">
+    <div>
       <h5>Shift Karyawan</h5>
       <div class="row">
         <div class="col-md-5">
