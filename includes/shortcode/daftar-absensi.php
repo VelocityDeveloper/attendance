@@ -7,6 +7,9 @@ function daftar_absensi_shortcode()
     return '<div class="container mt-4"><div class="alert alert-warning">Silakan login untuk melihat daftar absensi.</div></div>';
   }
 
+  $current_user_id = get_current_user_id(); // Ambil ID pengguna yang sedang login
+  $is_admin = current_user_can('administrator'); // Periksa apakah pengguna adalah admin
+  $disable = !$is_admin ? 'disabled' : '';
   ob_start();
 ?>
   <div class="container mt-4">
@@ -16,10 +19,10 @@ function daftar_absensi_shortcode()
       <!-- Pilihan Karyawan -->
       <div class="mb-3">
         <label for="karyawanSelect" class="form-label">Pilih Karyawan:</label>
-        <select id="karyawanSelect" class="form-select" x-model="selectedUser" @change="fetchAbsensi()">
-          <option value="0">Semua Karyawan</option>
+        <select id="karyawanSelect" class="form-select" x-model="selectedUser" @change="fetchAbsensi()" <?php echo $disable; ?>>
+          <option value="0">-</option>
           <template x-for="user in users" :key="user.id">
-            <option :value="user.id" x-text="user.name"></option>
+            <option :value="user.id" x-text="user.name" x-bind:selected="selectedUser === user.id"></option>
           </template>
         </select>
       </div>
@@ -83,7 +86,7 @@ function daftar_absensi_shortcode()
     document.addEventListener("alpine:init", () => {
       Alpine.data("absensiListHandler", () => ({
         users: [],
-        selectedUser: "",
+        selectedUser: "<?php echo $current_user_id; ?>", // Default ke ID user yang sedang login
         absensi: [],
         loading: true,
         singleLoading: {}, // Use an object to track loading state
@@ -95,7 +98,6 @@ function daftar_absensi_shortcode()
 
             if (result.success) {
               this.users = result.data.users;
-              this.selectedUser = this.users.length ? this.users[0].id : "";
               this.fetchAbsensi();
             }
           } catch (error) {
@@ -104,6 +106,8 @@ function daftar_absensi_shortcode()
         },
 
         async fetchAbsensi() {
+          if (!this.selectedUser) return; // Jangan ambil data absensi jika tidak ada user terpilih
+
           this.loading = true;
           try {
             const response = await fetch(`${absensiAjax.ajaxurl}?action=get_absensi_list&user_id=${this.selectedUser}`);
