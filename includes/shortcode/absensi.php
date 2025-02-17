@@ -116,10 +116,11 @@ function absensi_shortcode()
               this.fetchStatus();
             } else {
               console.log(result.data.message || "Gagal melakukan absensi.");
+              this.status = result.data.message; // Tampilkan pesan error
             }
           } catch (error) {
             console.error("Gagal melakukan absensi:", error);
-            console.log("Terjadi kesalahan saat melakukan absensi.");
+            this.status = "Terjadi kesalahan saat melakukan absensi.";
           } finally {
             this.loading = false;
           }
@@ -153,6 +154,34 @@ function handle_save_absensi()
   $lng = floatval($_POST['lng']);
   $today = current_time('Y-m-d');
 
+  // Ambil koordinat dari leaflet_coordinates
+  $leaflet_coordinates = json_decode(get_option('leaflet_coordinates'), true);
+
+  // Jika tidak ada koordinat, batalkan absensi
+  if (empty($leaflet_coordinates)) {
+    wp_send_json_error([
+      'message' => 'Tidak ada koordinat yang diizinkan untuk absensi.',
+    ]);
+  }
+
+  // Validasi jarak ke semua koordinat
+  $is_within_radius = false;
+  foreach ($leaflet_coordinates as $coord) {
+    $distance = calculate_distance($lat, $lng, $coord['lat'], $coord['lng']);
+    if ($distance <= 100) {
+      $is_within_radius = true;
+      break; // Cukup satu koordinat yang memenuhi
+    }
+  }
+
+  // Jika tidak ada koordinat yang memenuhi, batalkan absensi
+  if (!$is_within_radius) {
+    wp_send_json_error([
+      'message' => 'Anda berada di luar radius 100 meter dari lokasi yang diizinkan.',
+    ]);
+  }
+
+  // Cek apakah pengguna sudah absen
   $existing_absensi = $wpdb->get_col(
     $wpdb->prepare(
       "SELECT type FROM $table_name WHERE user_id = %d AND DATE(time) = %s",
@@ -233,4 +262,27 @@ function handle_get_absensi_status()
       'pulang' => in_array('pulang', $absensi_today)
     ],
   ]);
+}
+
+
+function calculate_distance($lat1, $lng1, $lat2, $lng2)
+{
+  $earth_radius = 6371000; // Radius bumi dalam meter
+
+  $lat1 = deg2rad($lat1);
+  $lng1 = deg2rad($lng1);
+  $lat2 = deg2rad($lat2);
+  $lng2 = deg2rad($lng2);
+
+  $delta_lat = $lat2 - $lat1;
+  $delta_lng = $lng2 - $lng1;
+
+  $a = sin($delta_lat / 2) * sin($delta_lat / 2) +
+    cos($lat1) * cos($lat2) *
+    sin($delta_lng / 2) * sin($delta_lng / 2);
+
+  $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+  $distance = $earth_radius * $c;
+  return $distance; // Jarak dalam meter
 }

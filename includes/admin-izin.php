@@ -32,7 +32,7 @@ function register_izin_post_type()
     'has_archive'        => true,
     'hierarchical'       => false,
     'menu_position'      => 20,
-    'supports'           => array('title'),
+    'supports'           => array('title', 'author')
   );
 
   register_post_type('izin', $args);

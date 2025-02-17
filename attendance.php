@@ -17,6 +17,7 @@ require_once plugin_dir_path(__FILE__) . 'includes/admin-izin.php';
 require_once plugin_dir_path(__FILE__) . 'includes/jabatan.php';
 
 require_once plugin_dir_path(__FILE__) . 'includes/shortcode/login.php';
+require_once plugin_dir_path(__FILE__) . 'includes/shortcode/list-izin.php';
 require_once plugin_dir_path(__FILE__) . 'includes/shortcode/register.php';
 require_once plugin_dir_path(__FILE__) . 'includes/shortcode/izin.php';
 require_once plugin_dir_path(__FILE__) . 'includes/shortcode/kordinat.php';
