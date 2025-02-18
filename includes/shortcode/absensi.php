@@ -158,4 +158,36 @@ function handle_save_absensi()
 
   wp_send_json_success(['message' => 'Absensi berhasil disimpan.']);
 }
-?>
+
+
+function handle_get_absensi_status()
+{
+  global $wpdb;
+  $table_name = $wpdb->prefix . 'absensi';
+  $user_id = get_current_user_id();
+  $today = current_time('Y-m-d');
+
+  $absensi_today = $wpdb->get_col(
+    $wpdb->prepare(
+      "SELECT type FROM $table_name WHERE user_id = %d AND DATE(time) = %s",
+      $user_id,
+      $today
+    )
+  );
+
+  if (in_array('masuk', $absensi_today) && in_array('pulang', $absensi_today)) {
+    $status = "Sampai jumpa lagi!";
+  } elseif (in_array('masuk', $absensi_today)) {
+    $status = "Tetap semangat & Fokus!";
+  } else {
+    $status = "Silakan absen masuk.";
+  }
+
+  wp_send_json_success([
+    'status' => $status,
+    'sudahAbsen' => [
+      'masuk' => in_array('masuk', $absensi_today),
+      'pulang' => in_array('pulang', $absensi_today)
+    ],
+  ]);
+}
