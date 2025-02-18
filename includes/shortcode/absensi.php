@@ -62,7 +62,6 @@ function absensi_shortcode()
           try {
             const response = await fetch(`${absensiAjax.ajaxurl}?action=get_absensi_status`);
             const result = await response.json();
-            console.log(result);
 
             if (result.success) {
               this.status = result.data.status || "Belum ada absensi hari ini.";
@@ -72,7 +71,6 @@ function absensi_shortcode()
               this.status = "Terjadi kesalahan dalam mengambil data absensi.";
             }
           } catch (error) {
-            console.error("Gagal memeriksa status absensi:", error);
             this.status = "Terjadi kesalahan saat memeriksa status.";
           } finally {
             this.loading = false;
@@ -81,17 +79,6 @@ function absensi_shortcode()
 
         async absen(type) {
           this.loading = true;
-          if ((type === 'masuk' && this.sudahAbsen.masuk) || (type === 'pulang' && this.sudahAbsen.pulang)) {
-            console.log(`Anda sudah absen ${type} hari ini.`);
-            this.loading = false;
-            return;
-          }
-
-          if (!navigator.geolocation) {
-            console.log("Geolocation tidak didukung di browser ini.");
-            this.loading = false;
-            return;
-          }
 
           try {
             const position = await new Promise((resolve, reject) => {
@@ -112,14 +99,11 @@ function absensi_shortcode()
 
             const result = await response.json();
             if (result.success) {
-              console.log(result.data.message);
               this.fetchStatus();
             } else {
-              console.log(result.data.message || "Gagal melakukan absensi.");
-              this.status = result.data.message; // Tampilkan pesan error
+              this.status = result.data.message;
             }
           } catch (error) {
-            console.error("Gagal melakukan absensi:", error);
             this.status = "Terjadi kesalahan saat melakukan absensi.";
           } finally {
             this.loading = false;
@@ -154,64 +138,10 @@ function handle_save_absensi()
   $lng = floatval($_POST['lng']);
   $today = current_time('Y-m-d');
 
-  // Ambil koordinat dari leaflet_coordinates
-  $leaflet_coordinates = json_decode(get_option('leaflet_coordinates'), true);
+  // Mendapatkan data perangkat dan IP
+  $user_agent = sanitize_text_field($_SERVER['HTTP_USER_AGENT']);
+  $user_ip = sanitize_text_field($_SERVER['REMOTE_ADDR']);
 
-  // Jika tidak ada koordinat, batalkan absensi
-  if (empty($leaflet_coordinates)) {
-    wp_send_json_error([
-      'message' => 'Tidak ada koordinat yang diizinkan untuk absensi.',
-    ]);
-  }
-
-  // Validasi jarak ke semua koordinat
-  $is_within_radius = false;
-  foreach ($leaflet_coordinates as $coord) {
-    $distance = calculate_distance($lat, $lng, $coord['lat'], $coord['lng']);
-    if ($distance <= 100) {
-      $is_within_radius = true;
-      break; // Cukup satu koordinat yang memenuhi
-    }
-  }
-
-  // Jika tidak ada koordinat yang memenuhi, batalkan absensi
-  if (!$is_within_radius) {
-    wp_send_json_error([
-      'message' => 'Anda berada di luar radius 100 meter dari lokasi yang diizinkan.',
-    ]);
-  }
-
-  // Cek apakah pengguna sudah absen
-  $existing_absensi = $wpdb->get_col(
-    $wpdb->prepare(
-      "SELECT type FROM $table_name WHERE user_id = %d AND DATE(time) = %s",
-      $user_id,
-      $today
-    )
-  );
-
-  if ($type === 'masuk' && in_array('masuk', $existing_absensi)) {
-    wp_send_json_error([
-      'message' => 'Anda sudah absen masuk hari ini.',
-      'sudahAbsen' => ['masuk' => true],
-    ]);
-  }
-
-  if ($type === 'pulang' && !in_array('masuk', $existing_absensi)) {
-    wp_send_json_error([
-      'message' => 'Anda belum absen masuk hari ini.',
-      'sudahAbsen' => ['masuk' => false],
-    ]);
-  }
-
-  if ($type === 'pulang' && in_array('pulang', $existing_absensi)) {
-    wp_send_json_error([
-      'message' => 'Anda sudah absen pulang hari ini.',
-      'sudahAbsen' => ['masuk' => false, 'pulang' => true],
-    ]);
-  }
-
-  // Simpan absen ke database
   $wpdb->insert(
     $table_name,
     [
@@ -219,70 +149,13 @@ function handle_save_absensi()
       'type' => $type,
       'lat' => $lat,
       'lng' => $lng,
-      'time' => current_time('mysql'),
-    ]
+      'device' => $user_agent,
+      'ip_address' => $user_ip,
+      'time' => current_time('mysql')
+    ],
+    ['%d', '%s', '%f', '%f', '%s', '%s', '%s']
   );
 
-  wp_send_json_success([
-    'message' => "Absensi $type berhasil.",
-    'sudahAbsen' => [
-      'masuk' => $type === 'masuk',
-      'pulang' => $type === 'pulang',
-    ],
-  ]);
+  wp_send_json_success(['message' => 'Absensi berhasil disimpan.']);
 }
-
-function handle_get_absensi_status()
-{
-  global $wpdb;
-  $table_name = $wpdb->prefix . 'absensi';
-  $user_id = get_current_user_id();
-  $today = current_time('Y-m-d');
-
-  $absensi_today = $wpdb->get_col(
-    $wpdb->prepare(
-      "SELECT type FROM $table_name WHERE user_id = %d AND DATE(time) = %s",
-      $user_id,
-      $today
-    )
-  );
-
-  if (in_array('masuk', $absensi_today) && in_array('pulang', $absensi_today)) {
-    $status = "Sampai jumpa lagi!";
-  } elseif (in_array('masuk', $absensi_today)) {
-    $status = "Tetap semangat & Fokus!";
-  } else {
-    $status = "Silakan absen masuk.";
-  }
-
-  wp_send_json_success([
-    'status' => $status,
-    'sudahAbsen' => [
-      'masuk' => in_array('masuk', $absensi_today),
-      'pulang' => in_array('pulang', $absensi_today)
-    ],
-  ]);
-}
-
-
-function calculate_distance($lat1, $lng1, $lat2, $lng2)
-{
-  $earth_radius = 6371000; // Radius bumi dalam meter
-
-  $lat1 = deg2rad($lat1);
-  $lng1 = deg2rad($lng1);
-  $lat2 = deg2rad($lat2);
-  $lng2 = deg2rad($lng2);
-
-  $delta_lat = $lat2 - $lat1;
-  $delta_lng = $lng2 - $lng1;
-
-  $a = sin($delta_lat / 2) * sin($delta_lat / 2) +
-    cos($lat1) * cos($lat2) *
-    sin($delta_lng / 2) * sin($delta_lng / 2);
-
-  $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-
-  $distance = $earth_radius * $c;
-  return $distance; // Jarak dalam meter
-}
+?>

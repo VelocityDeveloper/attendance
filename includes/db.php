@@ -13,6 +13,8 @@ function create_absensi_table()
         type varchar(50) NOT NULL,
         lat FLOAT(10,6) NOT NULL,
         lng FLOAT(10,6) NOT NULL,
+        device TEXT NOT NULL,
+        ip_address VARCHAR(50) NOT NULL,
         time DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
         PRIMARY KEY (id)
     ) $charset_collate;";
