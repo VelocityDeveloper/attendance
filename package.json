@@ -1,0 +1,13 @@
+{
+  "name": "attendance",
+  "version": "1.0.0",
+  "description": "Aplikasi absensi berbasis GPS menggunakan Alpine.js & AJAX.",
+  "main": "index.js",
+  "scripts": {
+    "build": "node src/script.js"
+  },
+  "dependencies": {
+    "archiver": "^5.3.1",
+    "fs": "0.0.1-security"
+  }
+}

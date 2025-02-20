@@ -67,3 +67,6 @@ function enqueue_custom_admin_script()
   wp_enqueue_script('custom-admin-script', plugin_dir_url(__FILE__) . '/assets/js/absensi.js', array('jquery'), null, true);
   wp_localize_script('custom-admin-script', 'absensiAjax', array('ajaxurl' => admin_url('admin-ajax.php')));
 }
+
+
+add_filter('show_admin_bar', '__return_false');
