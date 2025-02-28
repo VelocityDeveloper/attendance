@@ -68,7 +68,11 @@ function enqueue_custom_admin_script()
 }
 
 
-add_filter('show_admin_bar', '__return_false');
-
+add_filter('show_admin_bar', function ($show) {
+  if (!current_user_can('administrator')) {
+    return false;
+  }
+  return $show;
+});
 
 register_activation_hook(__FILE__, 'create_absensi_table');
