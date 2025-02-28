@@ -3,11 +3,18 @@ if (!defined('ABSPATH')) exit;
 
 function absensi_shortcode()
 {
+  ob_start();
+
   if (!is_user_logged_in()) {
-    return '<div class="container mt-4"><div class="alert alert-warning">Silakan login untuk melakukan absensi.</div>';
+    echo '<div class="container mt-4">';
+    echo '<div class="alert alert-warning">Silakan login untuk melakukan absensi.</div>';
+    echo '<div class="border p-3 p-md-5 rounded my-4" style="max-width:30rem;margin:0 auto">';
+    echo attendance_login_form();
+    echo '</div>';
+    echo '</div>';
+    return ob_get_clean();
   }
 
-  ob_start();
 ?>
   <div class="container mt-4">
     <div x-data="absensiHandler()">
