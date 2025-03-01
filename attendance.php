@@ -3,8 +3,9 @@
 Plugin Name: Absensi GPS Plugin
 Plugin URI: https://yourwebsite.com
 Description: Plugin absensi berbasis GPS menggunakan Alpine.js & AJAX.
-Version: 1.0
-Author: Your Name
+Version: 1.1.0
+Author: Velocity Developer
+Author URI: https://velocitydeveloper.com
 */
 
 if (!defined('ABSPATH')) exit; // Mencegah akses langsung

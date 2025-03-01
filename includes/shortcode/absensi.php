@@ -16,7 +16,12 @@ function absensi_shortcode()
   }
 
 ?>
-  <div class="container mt-4">
+  <div class="container border p-4 rounded mt-4">
+
+    <div class="text-end">
+      <a href="<?php echo wp_logout_url(); ?>" class="btn btn-sm btn-danger mb-2">Logout</a>
+    </div>
+
     <div x-data="absensiHandler()">
 
       <!-- Status Absensi -->
