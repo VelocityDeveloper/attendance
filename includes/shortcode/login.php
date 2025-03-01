@@ -4,7 +4,7 @@ function attendance_login_form()
     ob_start();
     $args = array(
         'echo'            => true,
-        'redirect'        => get_home_url(),
+        'redirect'        => get_the_permalink(),
         'remember'        => true,
         'value_remember'  => true,
     );
