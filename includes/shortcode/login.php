@@ -14,7 +14,7 @@ function attendance_login_form()
     $form = str_replace('input', 'input form-control', $form);
     $form = str_replace('login-submit', 'login-submit text-end', $form);
     $form = str_replace('button button-primary', 'button button-primary btn btn-primary px-4', $form);
-    $form = str_replace('<p class="login-submit text-end">', '<p class="login-submit text-end"><a class="btn rounded-0 btn-outline-primary" href="' . get_site_url() . '/register">Daftar</a>', $form);
+    $form = str_replace('<p class="login-submit text-end">', '<p class="login-submit text-end">', $form);
 
     return $form;
 }
