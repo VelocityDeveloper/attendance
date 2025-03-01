@@ -16,15 +16,24 @@ function daftar_absensi_shortcode()
     <div x-data="absensiListHandler()">
       <h4 class="text-center mb-3">Riwayat Absensi 30 Hari Terakhir</h4>
 
-      <!-- Pilihan Karyawan -->
-      <div class="mb-3">
-        <label for="karyawanSelect" class="form-label">Pilih Karyawan:</label>
-        <select id="karyawanSelect" class="form-select" x-model="selectedUser" @change="fetchAbsensi()" <?php echo $disable; ?>>
-          <option value="0">-</option>
-          <template x-for="user in users" :key="user.id">
-            <option :value="user.id" x-text="user.name" x-bind:selected="selectedUser === user.id"></option>
-          </template>
-        </select>
+
+      <div class="d-flex">
+        <!-- Pilihan Karyawan -->
+        <div class="mb-1">
+          <label for="karyawanSelect" class="form-label">Pilih Karyawan:</label>
+          <select id="karyawanSelect" class="form-select" x-model="selectedUser" @change="fetchAbsensi()" <?php echo $disable; ?>>
+            <option value="0">-</option>
+            <template x-for="user in users" :key="user.id">
+              <option :value="user.id" x-text="user.name" x-bind:selected="selectedUser === user.id"></option>
+            </template>
+          </select>
+        </div>
+
+        <!-- Pilihan Bulan -->
+        <div class="mb-1 ps-1">
+          <label for="monthSelect" class="form-label">Pilih Bulan:</label>
+          <input type="month" class="form-control" value="<?php echo date('Y-m'); ?>" x-model="selectedMonth" @change="fetchAbsensi()" id="monthSelect" name="monthSelect">
+        </div>
       </div>
 
       <!-- Loading Spinner -->
@@ -156,6 +165,7 @@ function daftar_absensi_shortcode()
       Alpine.data("absensiListHandler", () => ({
         users: [],
         selectedUser: "<?php echo $current_user_id; ?>", // Default ke ID user yang sedang login
+        selectedMonth: "<?php echo date('Y-m'); ?>",// Default Bulan saat ini
         absensi: [],
         loading: true,
         singleLoading: {}, // Use an object to track loading state
@@ -179,7 +189,7 @@ function daftar_absensi_shortcode()
 
           this.loading = true;
           try {
-            const response = await fetch(`${absensiAjax.ajaxurl}?action=get_absensi_list&user_id=${this.selectedUser}`);
+            const response = await fetch(`${absensiAjax.ajaxurl}?action=get_absensi_list&user_id=${this.selectedUser}&month=${this.selectedMonth}`);
             const result = await response.json();
 
             if (result.success) {
@@ -272,11 +282,13 @@ function get_absensi_list_ajax()
   }
 
   global $wpdb;
+
   $user_id = intval($_GET['user_id']);
+  $month = $_GET['month'];
   $table_name = $wpdb->prefix . 'absensi';
 
   // Ambil data absensi 30 hari terakhir
-  $query = "SELECT * FROM $table_name WHERE user_id = $user_id ORDER BY time DESC LIMIT 30";
+  $query = "SELECT * FROM $table_name WHERE user_id = $user_id AND time like '%$month%' ORDER BY time DESC LIMIT 30";
   $absensi = $wpdb->get_results($query, ARRAY_A);
 
   // Ambil shift yang ditugaskan ke user ini
